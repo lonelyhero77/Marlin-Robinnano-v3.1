@@ -86,13 +86,18 @@
 #define Z_STEP_PIN                          PB5
 #define Z_DIR_PIN                           PB4
 
+#define Z2_ENABLE_PIN                       PA3
+#define Z2_STEP_PIN                         PD15
+#define Z2_DIR_PIN                          PA1
+
 #define E0_ENABLE_PIN                       PB3
 #define E0_STEP_PIN                         PD6
 #define E0_DIR_PIN                          PD3
 
-#define E1_ENABLE_PIN                       PA3
-#define E1_STEP_PIN                         PD15
-#define E1_DIR_PIN                          PA1
+
+// #define E1_ENABLE_PIN                       PA3
+// #define E1_STEP_PIN                         PD15
+// #define E1_DIR_PIN                          PA1
 
 #if HAS_TMC_UART
   //
@@ -108,11 +113,14 @@
   #define Z_SERIAL_TX_PIN                   PD4
   #define Z_SERIAL_RX_PIN        Z_SERIAL_TX_PIN
 
+  #define Z2_SERIAL_TX_PIN                  PD8
+  #define Z2_SERIAL_RX_PIN      Z2_SERIAL_TX_PIN
+
   #define E0_SERIAL_TX_PIN                  PD9
   #define E0_SERIAL_RX_PIN      E0_SERIAL_TX_PIN
 
-  #define E1_SERIAL_TX_PIN                  PD8
-  #define E1_SERIAL_RX_PIN      E1_SERIAL_TX_PIN
+  // #define E1_SERIAL_TX_PIN                  PD8
+  // #define E1_SERIAL_RX_PIN      E1_SERIAL_TX_PIN
 
   // Reduce baud rate to improve software serial reliability
   #ifndef TMC_BAUD_RATE
@@ -271,6 +279,24 @@
 #define EXP2_06_PIN                         PA7
 #define EXP2_07_PIN                         PE12
 #define EXP2_08_PIN                         -1    // RESET
+
+#if ANY(HAS_DWIN_E3V2, IS_DWIN_MARLINUI)
+/**
+ *                ------                                     ------
+ * (BEEPER)  PC5 | 1  2 | PE13 (BTN_ENC)   (SPI1 MISO)  PA6 | 1  2 | PA5  (SPI1 SCK)
+ * (LCD_EN) PD13 | 3  4 | PC6  (LCD_RS)      (BTN_EN1)  PE8 | 3  4 | PE10 (SPI1 CS)
+ * (LCD_D4) PE14   5  6 | PE15 (LCD_D5)      (BTN_EN2) PE11   5  6 | PA7  (SPI1 MOSI)
+ * (LCD_D6) PD11 | 7  8 | PD10 (LCD_D7)      (SPI1_RS) PE12 | 7  8 | RESET
+ *           GND | 9 10 | 5V                            GND | 9 10 | 3.3V
+ *                ------                                     ------
+ *                 EXP1                                       EXP2
+ */
+  #define BTN_ENC                           EXP1_02_PIN //PE13
+  #define BTN_EN1                           EXP2_03_PIN //PE8
+  #define BTN_EN2                           EXP2_05_PIN //PE11
+  #define BEEPER_PIN                        EXP1_01_PIN //PC5
+
+#endif
 
 //
 // SPI SD Card
