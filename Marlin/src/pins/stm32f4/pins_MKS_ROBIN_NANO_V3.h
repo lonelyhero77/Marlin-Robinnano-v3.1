@@ -43,12 +43,15 @@
 #ifndef Z_CS_PIN
   #define Z_CS_PIN                          PD4
 #endif
+#ifndef Z2_CS_PIN
+  #define Z2_CS_PIN                         PD8
+#endif
 #ifndef E0_CS_PIN
   #define E0_CS_PIN                         PD9
 #endif
-#ifndef E1_CS_PIN
-  #define E1_CS_PIN                         PD8
-#endif
+// #ifndef E1_CS_PIN
+//   #define E1_CS_PIN                         PD8
+// #endif
 
 //
 // SPI pins for TMC2130 stepper drivers
