@@ -93,7 +93,7 @@ namespace ExtUI {
   void onUserConfirmRequired(const char * const cstr) {
     // TODO: A version of this method that takes an icon and button title,
     // or implement some kind of ExtUI enum.
-    onUserConfirmRequired(ICON_Continue_1, cstr, GET_TEXT_F(MSG_USERWAIT));
+    dwinPopupContinue(ICON_Continue_1, cstr, GET_TEXT_F(MSG_USERWAIT));
   }
 
   // For fancy LCDs include an icon ID, message, and translated button title
@@ -223,9 +223,9 @@ namespace ExtUI {
     void onMPCTuning(const mpcresult_t rst) {
       // Called for temperature MPC tuning result
       switch (rst) {
-        case MPC_STARTED:     dwinMPCTuning(MPC_STARTED);     break;
-        case MPC_TEMP_ERROR:  dwinMPCTuning(MPC_TEMP_ERROR);  break;
-        case MPC_INTERRUPTED: dwinMPCTuning(MPC_INTERRUPTED); break;
+        case MPC_STARTED:     dwinMPCTuning(tempcontrol_t(MPC_STARTED));     break;
+        case MPC_TEMP_ERROR:  dwinMPCTuning(tempcontrol_t(MPC_TEMP_ERROR));  break;
+        case MPC_INTERRUPTED: dwinMPCTuning(tempcontrol_t(MPC_INTERRUPTED)); break;
         case MPC_DONE:        dwinMPCTuning(AUTOTUNE_DONE);   break;
       }
     }
