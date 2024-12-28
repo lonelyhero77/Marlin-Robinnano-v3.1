@@ -79,8 +79,8 @@
     #include "lcd/e3v2/creality/dwin.h"
   #elif ENABLED(DWIN_CREALITY_LCD_JYERSUI)
     #include "lcd/e3v2/jyersui/dwin.h"
-  #elif ENABLED(DWIN_LCD_PROUI)
-    #include "lcd/extui/ui_api.h"
+  #elif ENABLED(SOVOL_SV06_RTS)
+    #include "lcd/sovol_rts/sovol_rts.h"
   #endif
 #endif
 
@@ -231,12 +231,14 @@
   #include "feature/controllerfan.h"
 #endif
 
-#if HAS_PRUSA_MMU1
-  #include "feature/mmu/mmu.h"
-#endif
-
-#if HAS_PRUSA_MMU2
+#if HAS_PRUSA_MMU3
+  #include "feature/mmu3/mmu3.h"
+  #include "feature/mmu3/mmu3_reporting.h"
+  #include "feature/mmu3/SpoolJoin.h"
+#elif HAS_PRUSA_MMU2
   #include "feature/mmu/mmu2.h"
+#elif HAS_PRUSA_MMU1
+  #include "feature/mmu/mmu.h"
 #endif
 
 #if ENABLED(PASSWORD_FEATURE)
@@ -276,7 +278,7 @@ bool wait_for_heatup = false;
 
 // For M0/M1, this flag may be cleared (by M108) to exit the wait-for-user loop
 #if HAS_RESUME_CONTINUE
-  bool wait_for_user; // = false;
+  bool wait_for_user; // = false
 
   void wait_for_user_response(millis_t ms/*=0*/, const bool no_sleep/*=false*/) {
     UNUSED(no_sleep);
@@ -327,7 +329,7 @@ bool pin_is_protected(const pin_t pin) {
 #pragma GCC diagnostic pop
 
 bool printer_busy() {
-  return planner.movesplanned() || printingIsActive();
+  return planner.has_blocks_queued() || printingIsActive();
 }
 
 /**
@@ -353,6 +355,7 @@ void startOrResumeJob() {
     TERN_(CANCEL_OBJECTS, cancelable.reset());
     TERN_(LCD_SHOW_E_TOTAL, e_move_accumulator = 0);
     TERN_(SET_REMAINING_TIME, ui.reset_remaining_time());
+    TERN_(HAS_PRUSA_MMU3, MMU3::operation_statistics.reset_per_print_stats());
   }
   print_job_timer.start();
 }
@@ -787,7 +790,7 @@ void idle(const bool no_stepper_sleep/*=false*/) {
 
   // Handle filament runout sensors
   #if HAS_FILAMENT_SENSOR
-    if (TERN1(HAS_PRUSA_MMU2, !mmu2.enabled()))
+    if (TERN1(HAS_PRUSA_MMU2, !mmu2.enabled()) && TERN1(HAS_PRUSA_MMU3, !mmu3.enabled()))
       runout.run();
   #endif
 
@@ -824,7 +827,11 @@ void idle(const bool no_stepper_sleep/*=false*/) {
   TERN_(HAS_BEEPER, buzzer.tick());
 
   // Handle UI input / draw events
-  ui.update();
+  #if ENABLED(SOVOL_SV06_RTS)
+    RTS_Update();
+  #else
+    ui.update();
+  #endif
 
   // Run i2c Position Encoders
   #if ENABLED(I2C_POSITION_ENCODERS)
@@ -852,7 +859,11 @@ void idle(const bool no_stepper_sleep/*=false*/) {
   #endif
 
   // Update the Průša MMU2
-  TERN_(HAS_PRUSA_MMU2, mmu2.mmu_loop());
+  #if HAS_PRUSA_MMU3
+    mmu3.mmu_loop();
+  #elif HAS_PRUSA_MMU2
+    mmu2.mmu_loop();
+  #endif
 
   // Handle Joystick jogging
   TERN_(POLL_JOG, joystick.inject_jog_moves());
@@ -1052,26 +1063,26 @@ inline void tmc_standby_setup() {
  *  - Install Marlin custom Exception Handlers, if set.
  *  - Init Marlin's HAL interfaces (for SPI, i2c, etc.)
  *  - Init some optional hardware and features:
- *    • MAX Thermocouple pins
- *    • Duet Smart Effector
- *    • Filament Runout Sensor
- *    • TMC220x Stepper Drivers (Serial)
- *    • PSU control
- *    • Power-loss Recovery
- *    • Stepper Driver Reset: DISABLE
- *    • TMC Stepper Drivers (SPI)
- *    • Run hal.init_board() for additional pins setup
- *    • ESP WiFi
+ *    MAX Thermocouple pins
+ *    Duet Smart Effector
+ *    Filament Runout Sensor
+ *    TMC220x Stepper Drivers (Serial)
+ *    PSU control
+ *    Power-loss Recovery
+ *    Stepper Driver Reset: DISABLE
+ *    TMC Stepper Drivers (SPI)
+ *    Run hal.init_board() for additional pins setup
+ *    ESP WiFi
  *  - Get the Reset Reason and report it
  *  - Print startup messages and diagnostics
  *  - Calibrate the HAL DELAY for precise timing
  *  - Init the buzzer, possibly a custom timer
  *  - Init more optional hardware:
- *    • Color LED illumination
- *    • NeoPixel illumination
- *    • Controller Fan
- *    • Creality DWIN LCD (show boot image)
- *    • Tare the Probe if possible
+ *    Color LED illumination
+ *    NeoPixel illumination
+ *    Controller Fan
+ *    Creality DWIN LCD (show boot image)
+ *    Tare the Probe if possible
  *  - Mount the (most likely external) SD Card
  *  - Load settings from EEPROM (or use defaults)
  *  - Init the Ethernet Port
@@ -1079,39 +1090,39 @@ inline void tmc_standby_setup() {
  *  - Adjust the (certainly wrong) current position by the home offset
  *  - Init the Planner::position (steps) based on current (native) position
  *  - Initialize more managers and peripherals:
- *    • Temperatures
- *    • Print Job Timer
- *    • Endstops and Endstop Interrupts
- *    • Stepper ISR - Kind of Important!
- *    • Servos
- *    • Servo-based Probe
- *    • Photograph Pin
- *    • Laser/Spindle tool Power / PWM
- *    • Coolant Control
- *    • Bed Probe
- *    • Stepper Driver Reset: ENABLE
- *    • Digipot I2C - Stepper driver current control
- *    • Stepper DAC - Stepper driver current control
- *    • Solenoid (probe, or for other use)
- *    • Home Pin
- *    • Custom User Buttons
- *    • Red/Blue Status LEDs
- *    • Case Light
- *    • Prusa MMU filament changer
- *    • Fan Multiplexer
- *    • Mixing Extruder
- *    • BLTouch Probe
- *    • I2C Position Encoders
- *    • Custom I2C Bus handlers
- *    • Enhanced tools or extruders:
- *      • Switching Extruder
- *      • Switching Nozzle
- *      • Parking Extruder
- *      • Magnetic Parking Extruder
- *      • Switching Toolhead
- *      • Electromagnetic Switching Toolhead
- *    • Watchdog Timer - Also Kind of Important!
- *    • Closed Loop Controller
+ *    Temperatures
+ *    Print Job Timer
+ *    Endstops and Endstop Interrupts
+ *    Stepper ISR - Kind of Important!
+ *    Servos
+ *    Servo-based Probe
+ *    Photograph Pin
+ *    Laser/Spindle tool Power / PWM
+ *    Coolant Control
+ *    Bed Probe
+ *    Stepper Driver Reset: ENABLE
+ *    Digipot I2C - Stepper driver current control
+ *    Stepper DAC - Stepper driver current control
+ *    Solenoid (probe, or for other use)
+ *    Home Pin
+ *    Custom User Buttons
+ *    Red/Blue Status LEDs
+ *    Case Light
+ *    Prusa MMU filament changer
+ *    Fan Multiplexer
+ *    Mixing Extruder
+ *    BLTouch Probe
+ *    I2C Position Encoders
+ *    Custom I2C Bus handlers
+ *    Enhanced tools or extruders:
+ *      Switching Extruder
+ *      Switching Nozzle
+ *      Parking Extruder
+ *      Magnetic Parking Extruder
+ *      Switching Toolhead
+ *      Electromagnetic Switching Toolhead
+ *    Watchdog Timer - Also Kind of Important!
+ *    Closed Loop Controller
  *  - Run Startup Commands, if defined
  *  - Tell host to close Host Prompts
  *  - Test Trinamic driver connections
@@ -1156,6 +1167,12 @@ void setup() {
   MYSERIAL1.begin(BAUDRATE);
   millis_t serial_connect_timeout = millis() + 1000UL;
   while (!MYSERIAL1.connected() && PENDING(millis(), serial_connect_timeout)) { /*nada*/ }
+
+  #if ENABLED(SOVOL_SV06_RTS)
+    LCD_SERIAL.begin(BAUDRATE);
+    serial_connect_timeout = millis() + 1000UL;
+    while (!LCD_SERIAL.connected() && PENDING(millis(), serial_connect_timeout)) { /*nada*/ }
+  #endif
 
   #if HAS_MULTI_SERIAL && !HAS_ETHERNET
     #ifndef BAUDRATE_2
@@ -1241,7 +1258,7 @@ void setup() {
     SETUP_RUN(runout.setup());
   #endif
 
-  #if HAS_TMC220x
+  #if HAS_TMC_UART
     SETUP_RUN(tmc_serial_begin());
   #endif
 
@@ -1314,8 +1331,11 @@ void setup() {
 
   // UI must be initialized before EEPROM
   // (because EEPROM code calls the UI).
-
-  SETUP_RUN(ui.init());
+  #if ENABLED(SOVOL_SV06_RTS)
+    SETUP_RUN(RTS_Update());
+  #else
+    SETUP_RUN(ui.init());
+  #endif
 
   #if PIN_EXISTS(SAFE_POWER)
     #if HAS_DRIVER_SAFE_POWER_PROTECT
@@ -1588,7 +1608,11 @@ void setup() {
     SETUP_RUN(stepper_driver_backward_report());
   #endif
 
-  #if HAS_PRUSA_MMU2
+  #if HAS_PRUSA_MMU3
+    if (mmu3.mmu_hw_enabled) SETUP_RUN(mmu3.start());
+    SETUP_RUN(mmu3.status());
+    SETUP_RUN(spooljoin.initStatus());
+  #elif HAS_PRUSA_MMU2
     SETUP_RUN(mmu2.init());
   #endif
 
@@ -1600,8 +1624,8 @@ void setup() {
 
   #if ENABLED(DWIN_CREALITY_LCD)
     SETUP_RUN(dwinInitScreen());
-  #elif ENABLED(DWIN_LCD_PROUI)
-    SETUP_RUN(ExtUI::onStartup());
+  #elif ENABLED(SOVOL_SV06_RTS)
+    SETUP_RUN(rts.init());
   #endif
 
   #if HAS_SERVICE_INTERVALS && DISABLED(DWIN_CREALITY_LCD)
