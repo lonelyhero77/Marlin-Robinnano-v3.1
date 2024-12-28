@@ -563,7 +563,7 @@
  *   998 : Dummy Table that ALWAYS reads 25°C or the temperature defined below.
  *   999 : Dummy Table that ALWAYS reads 100°C or the temperature defined below.
  */
-#define TEMP_SENSOR_0 1
+#define TEMP_SENSOR_0 5
 #define TEMP_SENSOR_1 0
 #define TEMP_SENSOR_2 0
 #define TEMP_SENSOR_3 0
@@ -1763,8 +1763,8 @@
 // Invert the stepper direction. Change (or reverse the motor connector) if an axis goes the wrong way.
 #define INVERT_X_DIR false
 #define INVERT_Y_DIR false
-#define INVERT_Z_DIR true
-#define INVERT_Z2_DIR false
+#define INVERT_Z_DIR false
+#define INVERT_Z2_DIR true
 //#define INVERT_I_DIR false
 //#define INVERT_J_DIR false
 //#define INVERT_K_DIR false
@@ -2687,7 +2687,8 @@
 // This option overrides the default number of encoder pulses needed to
 // produce one step. Should be increased for high-resolution encoders.
 //
-#define ENCODER_PULSES_PER_STEP 4
+// #define ENCODER_PULSES_PER_STEP 4
+#define ENCODER_PULSES_PER_STEP 2
 
 //
 // Use this option to override the number of step signals required to
@@ -2710,7 +2711,7 @@
 //
 //  Set this option if CLOCKWISE causes values to DECREASE
 //
-//#define REVERSE_ENCODER_DIRECTION
+#define REVERSE_ENCODER_DIRECTION
 
 //
 // This option reverses the encoder direction for navigating LCD menus.
@@ -2733,7 +2734,7 @@
 //
 // This option increases encoder samples to filter out phantom encoder clicks caused by EMI noise.
 //
-//#define ENCODER_NOISE_FILTER
+#define ENCODER_NOISE_FILTER
 #if ENABLED(ENCODER_NOISE_FILTER)
   #define ENCODER_SAMPLES 10
 #endif
@@ -3417,9 +3418,9 @@
 // Ender-3 v2 OEM display. A DWIN display with Rotary Encoder.
 //
 // #define DWIN_CREALITY_LCD           // Creality UI
-// #define DWIN_LCD_PROUI              // Pro UI by MRiscoC
+#define DWIN_LCD_PROUI              // Pro UI by MRiscoC
 // #define DWIN_CREALITY_LCD_JYERSUI   // Jyers UI by Jacob Myers
-#define DWIN_MARLINUI_PORTRAIT      // MarlinUI (portrait orientation)
+// #define DWIN_MARLINUI_PORTRAIT      // MarlinUI (portrait orientation)
 //#define DWIN_MARLINUI_LANDSCAPE     // MarlinUI (landscape orientation)
 
 //
